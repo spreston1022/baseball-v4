@@ -21,11 +21,18 @@ export default async function (request: ZuploRequest, context: ZuploContext) {
   }
 
   context.addResponseSendingHook(async (response) => {
-    if (!response.ok) return response;
+    const headers = new Headers(response.headers);
+    if (!response.ok) {
+      headers.set("x-quota-debug", `skipped-not-ok:${response.status}`);
+      return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+    }
     try {
       const data = await response.clone().json();
       const usage = data?.usage;
-      if (!usage) return response;
+      if (!usage) {
+        headers.set("x-quota-debug", "no-usage-field");
+        return new Response(JSON.stringify(data), { status: response.status, headers });
+      }
 
       const pricing = MODEL_PRICING[requestedModel] ?? DEFAULT_PRICING;
       const promptTokens = usage.prompt_tokens ?? 0;
@@ -35,14 +42,15 @@ export default async function (request: ZuploRequest, context: ZuploContext) {
       const costCents = Math.ceil(costUsd * 100);
 
       QuotaInboundPolicy.setMeters(context, { costCents });
-      context.log.info(
-        { model: requestedModel, promptTokens, completionTokens, costCents },
-        "Recorded request cost for quota"
+      headers.set(
+        "x-quota-debug",
+        `ok:model=${requestedModel},prompt=${promptTokens},completion=${completionTokens},costCents=${costCents}`
       );
+      return new Response(JSON.stringify(data), { status: response.status, headers });
     } catch (e) {
-      context.log.warn(`Failed to compute cost for quota metering: ${String(e)}`);
+      headers.set("x-quota-debug", `error:${String(e).slice(0, 300)}`);
+      return response;
     }
-    return response;
   });
 
   return request;
