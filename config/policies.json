@@ -21,26 +21,11 @@
     {
       "handler": {
         "export": "default",
-        "module": "$import(./modules/header-identity-inbound)",
+        "module": "$import(./modules/header-quota-custom-inbound)",
         "options": {}
       },
-      "name": "baseball-header-identity-inbound",
+      "name": "baseball-header-quota-custom-inbound",
       "policyType": "custom-code-inbound"
-    },
-    {
-      "handler": {
-        "export": "QuotaInboundPolicy",
-        "module": "$import(@zuplo/runtime)",
-        "options": {
-          "period": "daily",
-          "quotaBy": "user",
-          "allowances": {
-            "requests": 2
-          }
-        }
-      },
-      "name": "baseball-header-quota-inbound",
-      "policyType": "quota-inbound-policy"
     },
     {
       "handler": {
