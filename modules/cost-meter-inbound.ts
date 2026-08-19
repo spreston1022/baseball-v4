@@ -32,14 +32,10 @@ export default async function (request: ZuploRequest, context: ZuploContext) {
   const costCents = Math.max(1, Math.ceil(costUsd * 100));
 
   QuotaInboundPolicy.setMeters(context, { costCents });
-  context.addResponseSendingHook(async (response) => {
-    const headers = new Headers(response.headers);
-    headers.set(
-      "x-quota-debug",
-      `prepaid:model=${requestedModel},promptTokensEstimate=${promptTokensEstimate},maxTokens=${maxTokens},costCents=${costCents}`
-    );
-    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
-  });
+  context.log.info(
+    { model: requestedModel, promptTokensEstimate, maxTokens, costCents },
+    "Recorded prepaid request cost for quota"
+  );
 
   return request;
 }
