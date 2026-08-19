@@ -20,6 +20,10 @@ export default async function (request: ZuploRequest, context: ZuploContext) {
     // no-op: fall through with "unknown", priced at the default rate
   }
 
+  // TEMP diagnostic: call setMeters synchronously during the inbound pass to
+  // test whether a later response hook is simply too late for this to land.
+  QuotaInboundPolicy.setMeters(context, { costCentsInboundTest: 7 });
+
   context.addResponseSendingHook(async (response) => {
     const headers = new Headers(response.headers);
     if (!response.ok) {
