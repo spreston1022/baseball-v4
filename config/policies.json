@@ -39,7 +39,7 @@
           "period": "daily",
           "quotaBy": "function",
           "allowances": {
-            "requests": 2
+            "costCents": 1000
           },
           "identifier": {
             "module": "$import(./modules/quota-identifier)",

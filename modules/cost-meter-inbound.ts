@@ -10,51 +10,35 @@ const MODEL_PRICING: Record<string, { inputPerMillion: number; outputPerMillion:
   "anthropic/claude-opus-4-5": { inputPerMillion: 5.0, outputPerMillion: 25.0 },
 };
 const DEFAULT_PRICING = MODEL_PRICING["openai/gpt-5.2"];
+const CHARS_PER_TOKEN = 4;
+const DEFAULT_MAX_TOKENS = 500;
 
 export default async function (request: ZuploRequest, context: ZuploContext) {
   let requestedModel = "unknown";
+  let promptChars = 0;
+  let maxTokens = DEFAULT_MAX_TOKENS;
   try {
     const body = await request.clone().json();
     requestedModel = body?.model ?? "unknown";
+    promptChars = JSON.stringify(body?.messages ?? "").length;
+    maxTokens = body?.max_tokens ?? body?.max_completion_tokens ?? DEFAULT_MAX_TOKENS;
   } catch {
-    // no-op: fall through with "unknown", priced at the default rate
+    // no-op: fall through with defaults, priced at the default rate
   }
 
-  // TEMP diagnostic: call setMeters synchronously during the inbound pass to
-  // test whether a later response hook is simply too late for this to land.
-  QuotaInboundPolicy.setMeters(context, { costCentsInboundTest: 7 });
+  const pricing = MODEL_PRICING[requestedModel] ?? DEFAULT_PRICING;
+  const promptTokensEstimate = Math.ceil(promptChars / CHARS_PER_TOKEN);
+  const costUsd = (promptTokensEstimate * pricing.inputPerMillion + maxTokens * pricing.outputPerMillion) / 1_000_000;
+  const costCents = Math.max(1, Math.ceil(costUsd * 100));
 
+  QuotaInboundPolicy.setMeters(context, { costCents });
   context.addResponseSendingHook(async (response) => {
     const headers = new Headers(response.headers);
-    if (!response.ok) {
-      headers.set("x-quota-debug", `skipped-not-ok:${response.status}`);
-      return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
-    }
-    try {
-      const data = await response.clone().json();
-      const usage = data?.usage;
-      if (!usage) {
-        headers.set("x-quota-debug", "no-usage-field");
-        return new Response(JSON.stringify(data), { status: response.status, headers });
-      }
-
-      const pricing = MODEL_PRICING[requestedModel] ?? DEFAULT_PRICING;
-      const promptTokens = usage.prompt_tokens ?? 0;
-      const completionTokens = usage.completion_tokens ?? 0;
-      const costUsd =
-        (promptTokens * pricing.inputPerMillion + completionTokens * pricing.outputPerMillion) / 1_000_000;
-      const costCents = Math.ceil(costUsd * 100);
-
-      QuotaInboundPolicy.setMeters(context, { costCents });
-      headers.set(
-        "x-quota-debug",
-        `ok:model=${requestedModel},prompt=${promptTokens},completion=${completionTokens},costCents=${costCents}`
-      );
-      return new Response(JSON.stringify(data), { status: response.status, headers });
-    } catch (e) {
-      headers.set("x-quota-debug", `error:${String(e).slice(0, 300)}`);
-      return response;
-    }
+    headers.set(
+      "x-quota-debug",
+      `prepaid:model=${requestedModel},promptTokensEstimate=${promptTokensEstimate},maxTokens=${maxTokens},costCents=${costCents}`
+    );
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
   });
 
   return request;
