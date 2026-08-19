@@ -48,7 +48,7 @@
         }
       },
       "name": "baseball-quota-inbound",
-      "policyType": "quota-inbound"
+      "policyType": "quota-inbound-policy"
     },
     {
       "handler": {
