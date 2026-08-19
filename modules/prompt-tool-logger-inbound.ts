@@ -1,6 +1,7 @@
 import { ZuploContext, ZuploRequest } from "@zuplo/runtime";
 
 export default async function (request: ZuploRequest, context: ZuploContext) {
+  context.log.info({ user: request.user }, "DEBUG: request.user at logger position");
   try {
     const body = await request.clone().json();
     const lastUserMessage = [...(body?.messages ?? [])].reverse().find((m: any) => m.role === "user");
