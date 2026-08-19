@@ -11,6 +11,15 @@
     },
     {
       "handler": {
+        "export": "default",
+        "module": "$import(./modules/prompt-tool-logger-inbound)",
+        "options": {}
+      },
+      "name": "baseball-prompt-tool-logger-inbound",
+      "policyType": "custom-code-inbound"
+    },
+    {
+      "handler": {
         "export": "OpenIdJwtInboundPolicy",
         "module": "$import(@zuplo/runtime)",
         "options": {
