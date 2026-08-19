@@ -91,5 +91,6 @@ export default async function (request: ZuploRequest, context: ZuploContext) {
   }
 
   context.log.info(`Authenticated request from ${payload.sub}`);
+  request.user = { sub: payload.sub ?? "unknown", data: payload };
   return request;
 }

@@ -33,6 +33,34 @@
     },
     {
       "handler": {
+        "export": "QuotaInboundPolicy",
+        "module": "$import(@zuplo/runtime)",
+        "options": {
+          "period": "daily",
+          "quotaBy": "function",
+          "allowances": {
+            "costCents": 1000
+          },
+          "identifier": {
+            "module": "$import(./modules/quota-identifier)",
+            "getQuotaDetailExport": "getQuotaDetail"
+          }
+        }
+      },
+      "name": "baseball-quota-inbound",
+      "policyType": "quota-inbound"
+    },
+    {
+      "handler": {
+        "export": "default",
+        "module": "$import(./modules/cost-meter-inbound)",
+        "options": {}
+      },
+      "name": "baseball-cost-meter-inbound",
+      "policyType": "custom-code-inbound"
+    },
+    {
+      "handler": {
         "export": "AIGatewayConfigurationLoaderV2InboundPolicy",
         "module": "$import(@zuplo/runtime)",
         "options": {
