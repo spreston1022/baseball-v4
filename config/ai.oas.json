@@ -6,29 +6,6 @@
     "description": "A unified API gateway for multiple AI providers. OpenAI-compatible ops are served under /{app_id}/v1/*; other paths under /{app_id} are rejected."
   },
   "paths": {
-    "/debug/quota-usage": {
-      "get": {
-        "summary": "TEMPORARY debug endpoint for quota usage inspection",
-        "description": "Returns current QuotaInboundPolicy usage for baseball-quota-inbound. Remove once quota debugging is complete.",
-        "operationId": "quotaDebug",
-        "responses": {
-          "200": {
-            "description": "Current quota usage"
-          }
-        },
-        "x-zuplo-route": {
-          "corsPolicy": "none",
-          "handler": {
-            "export": "default",
-            "module": "$import(./modules/quota-debug-handler)",
-            "options": {}
-          },
-          "policies": {
-            "inbound": ["baseball-jwt-verify-inbound", "baseball-quota-inbound"]
-          }
-        }
-      }
-    },
     "/.well-known/openid-configuration": {
       "get": {
         "summary": "OIDC discovery document for JWT auth issuer",
