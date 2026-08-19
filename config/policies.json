@@ -11,6 +11,19 @@
     },
     {
       "handler": {
+        "export": "OpenIdJwtInboundPolicy",
+        "module": "$import(@zuplo/runtime)",
+        "options": {
+          "issuer": "https://baseball-worker.internal",
+          "audience": "baseball-ai-gateway",
+          "jwkUrl": "https://baseball-v4-main-b7f69a7.zuplo.app/.well-known/jwks.json"
+        }
+      },
+      "name": "baseball-jwt-auth-inbound",
+      "policyType": "open-id-jwt-auth-inbound"
+    },
+    {
+      "handler": {
         "export": "AIGatewayConfigurationLoaderV2InboundPolicy",
         "module": "$import(@zuplo/runtime)",
         "options": {

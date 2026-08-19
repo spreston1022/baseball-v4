@@ -6,6 +6,29 @@
     "description": "A unified API gateway for multiple AI providers. OpenAI-compatible ops are served under /{app_id}/v1/*; other paths under /{app_id} are rejected."
   },
   "paths": {
+    "/.well-known/jwks.json": {
+      "get": {
+        "summary": "JWKS for worker JWT auth",
+        "description": "Publishes the public key used to verify JWTs the baseball Worker signs for the baseball-jwt-auth-inbound policy.",
+        "operationId": "jwks",
+        "responses": {
+          "200": {
+            "description": "JSON Web Key Set"
+          }
+        },
+        "x-zuplo-route": {
+          "corsPolicy": "none",
+          "handler": {
+            "export": "default",
+            "module": "$import(./modules/jwks-handler)",
+            "options": {}
+          },
+          "policies": {
+            "inbound": []
+          }
+        }
+      }
+    },
     "/:app_id/(.*)": {
       "x-zuplo-path": {
         "pathMode": "url-pattern"
