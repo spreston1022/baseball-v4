@@ -37,13 +37,9 @@
         "module": "$import(@zuplo/runtime)",
         "options": {
           "period": "daily",
-          "quotaBy": "function",
+          "quotaBy": "user",
           "allowances": {
             "requests": 100
-          },
-          "identifier": {
-            "module": "$import(./modules/quota-identifier)",
-            "getQuotaDetailExport": "getQuotaDetail"
           }
         }
       },
