@@ -6,6 +6,29 @@
     "description": "A unified API gateway for multiple AI providers. OpenAI-compatible ops are served under /{app_id}/v1/*; other paths under /{app_id} are rejected."
   },
   "paths": {
+    "/.well-known/openid-configuration": {
+      "get": {
+        "summary": "OIDC discovery document for JWT auth issuer",
+        "description": "Minimal OpenID discovery document so OpenIdJwtInboundPolicy can resolve this issuer, matching how real IdPs (Auth0, Zuplo's own auth service) expose discovery metadata.",
+        "operationId": "openidConfiguration",
+        "responses": {
+          "200": {
+            "description": "OpenID discovery document"
+          }
+        },
+        "x-zuplo-route": {
+          "corsPolicy": "none",
+          "handler": {
+            "export": "default",
+            "module": "$import(./modules/openid-config-handler)",
+            "options": {}
+          },
+          "policies": {
+            "inbound": []
+          }
+        }
+      }
+    },
     "/.well-known/jwks.json": {
       "get": {
         "summary": "JWKS for worker JWT auth",
