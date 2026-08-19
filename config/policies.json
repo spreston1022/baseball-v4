@@ -14,7 +14,7 @@
         "export": "OpenIdJwtInboundPolicy",
         "module": "$import(@zuplo/runtime)",
         "options": {
-          "issuer": "https://baseball-worker.internal",
+          "issuer": "https://baseball-v4-main-b7f69a7.zuplo.app",
           "audience": "baseball-ai-gateway",
           "jwkUrl": "https://baseball-v4-main-b7f69a7.zuplo.app/.well-known/jwks.json"
         }
