@@ -24,6 +24,15 @@
     },
     {
       "handler": {
+        "export": "default",
+        "module": "$import(./modules/jwt-auth-inbound)",
+        "options": {}
+      },
+      "name": "baseball-jwt-verify-inbound",
+      "policyType": "custom-code-inbound"
+    },
+    {
+      "handler": {
         "export": "AIGatewayConfigurationLoaderV2InboundPolicy",
         "module": "$import(@zuplo/runtime)",
         "options": {
