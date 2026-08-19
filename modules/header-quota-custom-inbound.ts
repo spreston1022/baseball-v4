@@ -1,7 +1,7 @@
 import { ZuploContext, ZuploRequest, ZoneCache } from "@zuplo/runtime";
 
 const IDENTITY_HEADER = "x-user-sub";
-const DAILY_LIMIT = 2;
+const DAILY_LIMIT = 4;
 const TTL_SECONDS = 86400;
 
 function todayKey(): string {
