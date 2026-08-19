@@ -21,6 +21,15 @@
     {
       "handler": {
         "export": "default",
+        "module": "$import(./modules/ssn-block-inbound)",
+        "options": {}
+      },
+      "name": "baseball-ssn-block-inbound",
+      "policyType": "custom-code-inbound"
+    },
+    {
+      "handler": {
+        "export": "default",
         "module": "$import(./modules/header-quota-custom-inbound)",
         "options": {}
       },
