@@ -24,7 +24,7 @@
             "options": {}
           },
           "policies": {
-            "inbound": ["baseball-jwt-verify-inbound"]
+            "inbound": ["baseball-jwt-verify-inbound", "baseball-quota-inbound"]
           }
         }
       }
