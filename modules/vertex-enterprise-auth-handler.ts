@@ -59,17 +59,28 @@ QcWYmTRGPlA6S8Z07BO/23AZXDgs0aV0GMpSJGmuX6SQPNQ4tY+lIkSl7iUt/Mq4
   },
 };
 
-// Models what a real Consumer-metadata lookup would return (see
-// request.user.data.enterpriseAccount below): Zuplo's AI Gateway project
-// type does not currently expose the classic API Key Consumers management
-// UI (that's a regular-API-Gateway-project feature), so this map stands in
-// for that data source. The resolution code itself is written exactly as it
-// would be against a real Consumer record - swapping the data source is the
-// only thing that would change if/when Consumers become available here.
-const CALLER_TO_ENTERPRISE: Record<string, string> = {
-  "alice@acme-corp.com": "acme-corp",
-  "bob@globex-corp.com": "globex-corp",
+// Keyed by ORGANIZATION (email domain), not by individual employee - this is
+// what makes onboarding scale with the number of enterprise customers rather
+// than the number of employees across all of them. Any caller from
+// @acme-corp.com resolves to Acme's account automatically, with no change
+// needed when Acme hires someone new.
+//
+// This still models what a real deployment would look like: in production,
+// the domain (or a proper org_id claim) would come from a token already
+// verified by the enterprise customer's own IdP (Okta, Google Workspace,
+// Entra ID), not a raw unverified header - and the domain-to-account map
+// itself would live in a real data store / Zuplo Consumer metadata, not
+// source code (Zuplo's AI Gateway project type doesn't yet expose Consumer
+// management, so this map stands in for that until it does).
+const DOMAIN_TO_ENTERPRISE: Record<string, string> = {
+  "acme-corp.com": "acme-corp",
+  "globex-corp.com": "globex-corp",
 };
+
+function resolveEnterpriseKey(callerSub: string): string | undefined {
+  const domain = callerSub.split("@")[1]?.toLowerCase();
+  return domain ? DOMAIN_TO_ENTERPRISE[domain] : undefined;
+}
 
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const VERTEX_SCOPE = "https://www.googleapis.com/auth/cloud-platform";
@@ -117,18 +128,18 @@ async function signGoogleServiceAccountJwt(account: EnterpriseAccount): Promise<
 }
 
 export default async function (request: ZuploRequest, context: ZuploContext) {
-  // Stands in for request.user.data.enterpriseAccount from a real Consumer
-  // record (see CALLER_TO_ENTERPRISE above for why).
+  // callerSub stands in for a claim a real IdP would have already verified
+  // (see DOMAIN_TO_ENTERPRISE above for why resolution is domain-based).
   const callerSub = request.headers.get("x-user-sub") ?? "anonymous";
-  const enterpriseKey = CALLER_TO_ENTERPRISE[callerSub];
+  const enterpriseKey = resolveEnterpriseKey(callerSub);
   const account = enterpriseKey ? ENTERPRISE_ACCOUNTS[enterpriseKey] : undefined;
 
   if (!account) {
-    context.log.warn({ callerSub }, "vertex-enterprise-auth: no enterprise account mapped for this caller");
+    context.log.warn({ callerSub }, "vertex-enterprise-auth: caller's domain has no enterprise account mapped");
     return new Response(
       JSON.stringify({
         error: `No enterprise Vertex AI account is configured for caller '${callerSub}'`,
-        knownCallers: Object.keys(CALLER_TO_ENTERPRISE),
+        knownDomains: Object.keys(DOMAIN_TO_ENTERPRISE),
       }),
       { status: 404, headers: { "content-type": "application/json" } }
     );
