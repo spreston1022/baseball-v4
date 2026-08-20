@@ -20,4 +20,4 @@ for every application on the route.
 - Declare additional selectable policies (including custom code policies) in
   `config/policies.json`.
 - Pushes to your default branch deploy the gateway to production.
-- Trivial redeploy trigger: 2026-08-20.
+- Trivial redeploy trigger: 2026-08-20 (retry after adding VERTEX_DEMO_PRIVATE_KEY_PEM).
