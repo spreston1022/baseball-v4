@@ -59,6 +59,18 @@ QcWYmTRGPlA6S8Z07BO/23AZXDgs0aV0GMpSJGmuX6SQPNQ4tY+lIkSl7iUt/Mq4
   },
 };
 
+// Models what a real Consumer-metadata lookup would return (see
+// request.user.data.enterpriseAccount below): Zuplo's AI Gateway project
+// type does not currently expose the classic API Key Consumers management
+// UI (that's a regular-API-Gateway-project feature), so this map stands in
+// for that data source. The resolution code itself is written exactly as it
+// would be against a real Consumer record - swapping the data source is the
+// only thing that would change if/when Consumers become available here.
+const CALLER_TO_ENTERPRISE: Record<string, string> = {
+  "alice@acme-corp.com": "acme-corp",
+  "bob@globex-corp.com": "globex-corp",
+};
+
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const VERTEX_SCOPE = "https://www.googleapis.com/auth/cloud-platform";
 
@@ -105,23 +117,18 @@ async function signGoogleServiceAccountJwt(account: EnterpriseAccount): Promise<
 }
 
 export default async function (request: ZuploRequest, context: ZuploContext) {
-  // request.user is populated by the vertex-demo-api-key-inbound policy
-  // (ApiKeyInboundPolicy): .sub is the authenticated Consumer's name, .data
-  // is that Consumer's metadata - a real Zuplo-managed identity record, not
-  // a hardcoded lookup table.
-  const callerSub = request.user?.sub ?? "anonymous";
-  const enterpriseKey = request.user?.data?.enterpriseAccount as string | undefined;
+  // Stands in for request.user.data.enterpriseAccount from a real Consumer
+  // record (see CALLER_TO_ENTERPRISE above for why).
+  const callerSub = request.headers.get("x-user-sub") ?? "anonymous";
+  const enterpriseKey = CALLER_TO_ENTERPRISE[callerSub];
   const account = enterpriseKey ? ENTERPRISE_ACCOUNTS[enterpriseKey] : undefined;
 
   if (!account) {
-    context.log.warn(
-      { callerSub, enterpriseKey },
-      "vertex-enterprise-auth: authenticated consumer has no valid enterpriseAccount metadata"
-    );
+    context.log.warn({ callerSub }, "vertex-enterprise-auth: no enterprise account mapped for this caller");
     return new Response(
       JSON.stringify({
-        error: `Consumer '${callerSub}' has no valid 'enterpriseAccount' metadata (got '${enterpriseKey}'). Set it in the Consumer's metadata in the Zuplo Portal.`,
-        knownEnterpriseAccounts: Object.keys(ENTERPRISE_ACCOUNTS),
+        error: `No enterprise Vertex AI account is configured for caller '${callerSub}'`,
+        knownCallers: Object.keys(CALLER_TO_ENTERPRISE),
       }),
       { status: 404, headers: { "content-type": "application/json" } }
     );

@@ -11,18 +11,6 @@
     },
     {
       "handler": {
-        "export": "ApiKeyInboundPolicy",
-        "module": "$import(@zuplo/runtime)",
-        "options": {
-          "allowUnauthenticatedRequests": false,
-          "cacheTtlSeconds": 60
-        }
-      },
-      "name": "vertex-demo-api-key-inbound",
-      "policyType": "api-key-inbound"
-    },
-    {
-      "handler": {
         "export": "default",
         "module": "$import(./modules/prompt-tool-logger-inbound)",
         "options": {}
