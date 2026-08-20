@@ -18,9 +18,9 @@ type EnterpriseAccount = {
 const ENTERPRISE_ACCOUNTS: Record<string, EnterpriseAccount> = {
   "acme-corp": {
     displayName: "Acme Corp",
-    gcpProjectId: environment.VERTEX_DEMO_PROJECT_ID ?? "",
-    clientEmail: environment.VERTEX_DEMO_CLIENT_EMAIL ?? "",
-    privateKeyPem: (environment.VERTEX_DEMO_PRIVATE_KEY_PEM ?? "").replace(/\\n/g, "\n"),
+    gcpProjectId: (environment.VERTEX_DEMO_PROJECT_ID ?? "").trim(),
+    clientEmail: (environment.VERTEX_DEMO_CLIENT_EMAIL ?? "").trim(),
+    privateKeyPem: (environment.VERTEX_DEMO_PRIVATE_KEY_PEM ?? "").trim().replace(/\\n/g, "\n"),
     isRealAccount: true,
   },
   "globex-corp": {
@@ -129,21 +129,11 @@ export default async function (request: ZuploRequest, context: ZuploContext) {
   }
 
   if (account.isRealAccount && (!account.clientEmail || !account.privateKeyPem || !account.gcpProjectId)) {
-    const diagnostic = {
-      VERTEX_DEMO_CLIENT_EMAIL_present: Boolean(environment.VERTEX_DEMO_CLIENT_EMAIL),
-      VERTEX_DEMO_CLIENT_EMAIL_length: (environment.VERTEX_DEMO_CLIENT_EMAIL ?? "").length,
-      VERTEX_DEMO_PROJECT_ID_present: Boolean(environment.VERTEX_DEMO_PROJECT_ID),
-      VERTEX_DEMO_PROJECT_ID_length: (environment.VERTEX_DEMO_PROJECT_ID ?? "").length,
-      VERTEX_DEMO_PRIVATE_KEY_PEM_present: Boolean(environment.VERTEX_DEMO_PRIVATE_KEY_PEM),
-      VERTEX_DEMO_PRIVATE_KEY_PEM_length: (environment.VERTEX_DEMO_PRIVATE_KEY_PEM ?? "").length,
-      VERTEX_DEMO_PRIVATE_KEY_PEM_startsWithBegin: (environment.VERTEX_DEMO_PRIVATE_KEY_PEM ?? "").startsWith("-----BEGIN"),
-    };
-    context.log.error({ diagnostic }, "vertex-enterprise-auth: real account is missing required environment variables");
+    context.log.error("vertex-enterprise-auth: real account is missing required environment variables");
     return new Response(
       JSON.stringify({
         error:
           "This enterprise account is configured to use a real GCP service account, but VERTEX_DEMO_CLIENT_EMAIL / VERTEX_DEMO_PRIVATE_KEY_PEM / VERTEX_DEMO_PROJECT_ID are not set in the project's environment variables.",
-        diagnostic,
       }),
       { status: 500, headers: { "content-type": "application/json" } }
     );
