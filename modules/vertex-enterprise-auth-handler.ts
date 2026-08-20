@@ -1,51 +1,27 @@
-import { ZuploContext, ZuploRequest } from "@zuplo/runtime";
+import { ZuploContext, ZuploRequest, environment } from "@zuplo/runtime";
 
-// DEMO ONLY: these are locally-generated mock service-account keys, not real
-// GCP credentials. They are not registered with Google, so the real token
-// exchange below will be rejected by Google - that rejection is itself proof
-// the mechanics (JWT construction, signing, and the live call to Google's
-// token endpoint) are genuine, not simulated.
+// The "acme-corp" account below is a REAL GCP service account (credentials
+// loaded from environment variables, never hardcoded - this repo is public).
+// "globex-corp" remains a locally-generated mock, deliberately not registered
+// with Google, kept as a contrast case: its token exchange is expected to be
+// rejected, proving the rejection path is genuine and not just an artifact of
+// bad code.
 
 type EnterpriseAccount = {
   displayName: string;
   gcpProjectId: string;
   clientEmail: string;
   privateKeyPem: string;
+  isRealAccount: boolean;
 };
 
 const ENTERPRISE_ACCOUNTS: Record<string, EnterpriseAccount> = {
   "acme-corp": {
     displayName: "Acme Corp",
-    gcpProjectId: "acme-corp-demo-project",
-    clientEmail: "vertex-gateway@acme-corp-demo-project.iam.gserviceaccount.com",
-    privateKeyPem: `-----BEGIN PRIVATE KEY-----
-MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDwvqlKEB0ps6nV
-mcvD3eMR8xmEGAKG4xTLBQ/6pY+XUIRE5dre/3A+Pa+JVbklwJ1ONaPhYS4rJI7k
-zGcDgJ0/+na14QNjh0hQlJG0tNrI1zBTCkxsy5AtPlcl7dlszVXrQqg+BGRUTM9g
-1mQEt1jfyvBCVGI12aF3BtM0+lt6bZwfnDs9HIqJ1q51Tlv8BIOs9nMykwACCvQ0
-cdcYQgc52LX9NNuMYmVr/bEs/qYj8pJYuAu4NoujgOD6PwnBNKVmU9TJ8Yr3kAOs
-Iu/Oumfa4G+iCRfERpQ92A9JBGtI2Gm138sQ8DbffrXV3P+uG8oLN4uFdN0yx/W3
-ICBAKcArAgMBAAECggEBAJJtFOB0Ppifqzu86F/AdJz1RF7Aj8DlGz+EW7yyuExr
-b5fMSjx6FxX0RPD+D7ezmLn6DCxIBGG/QZ5N6JYLwxknyM5FBt+hZ82DH8BOhAfG
-QqEvUV6WzaGHGlB6g1UW6xxFlbjqyO8xLK0UmQ75SXgMoedmFbn1Ha0cnJfLcppa
-JKTR6JCtvYQP+4HkjvJLAfwqBkSjVz4dz4iAdznM/SI5aAQiZPMj6k2L0esNJp30
-cn2I8mhbOy1LW8koaIiirSojWSJjZBZkQ0BMtFpo4EYbLPwv9/geuAHfzxd/19Dy
-laA+6pzeU3wsPyt3KJG7Z0VO7Aui38H5YJf1GbcyCzECgYEA/CeSdrFFmFzOz2hd
-PM5RNHfLnMsjSV6bm8sQm+6rLp4w/6sMgPXBrHzP5Z4F8IdXRDTK0btjyESxC4F2
-wDQ0t+WjD1EaQvZTI2tgq2MkYGPmSMqFdIua0rUVXuluQdL4u8dbdkTwR0ZtS2Zm
-sFx58iv4PKb5+HvOvzI7q47Et4MCgYEA9GqLZlcFQY6Ya9DSeBcMmNuTcQK7BBAc
-8V62XFT/Dhkf3aQsplykPtLk6wqgWnI+oNp9t1fFpTbV/gtw8HkTivQTtjvLHuqO
-76z+lNvq1oBJYHkwnyfNLu9BZSPvvq2L1rvZB5h3q91tzHEaqcPcFlS5HIpKWDb0
-4XQPvOj2TDkCgYBETBegrH1UOncNuI/gg2V9V6E/08m3+rcdKJBUG/4jv1c4OMVH
-PMl7hcbtw7KKJq5dXAs/aYkqWmi13BglET7iPIHBCU+aqYt1QYVKhqz4qrZaKvig
-y5tgzQl/zqw9if4zJllAnIWUWKAL1y2jQTkKfhxbmUKFqksigGGnIyFnLwKBgQC5
-VpGeaR5zN84c85yls9S5lMeZSpjF2/IWldty6IEAD806JOQ2wslJWmJ8WPJ/o2Ia
-V5Q9EzGstohOvB5IO4e2Np878Nt19ietV2E1QA4z2dPKdBuKlIPis0rDhxylWrRP
-gOJyAAu/J4m7HYk6cmrSBCzal4MIoaPP0lKczYr3AQKBgDQBVFYTzmCtR95In5ea
-lXT1Gg+10FeyBp4GKdSyJnbci/st4WMw1Ff4jja4nYNvCkdMD42NNtQinh910nBJ
-WJ2b7WhgBj34/sDM3op/jZ48AFbDYqxu+zhiGWGvc/Ko/cnd8A08L7Rhe9mSOirh
-9bNaKdcEbX9kW+74QshArdl/
------END PRIVATE KEY-----`,
+    gcpProjectId: environment.VERTEX_DEMO_PROJECT_ID ?? "",
+    clientEmail: environment.VERTEX_DEMO_CLIENT_EMAIL ?? "",
+    privateKeyPem: (environment.VERTEX_DEMO_PRIVATE_KEY_PEM ?? "").replace(/\\n/g, "\n"),
+    isRealAccount: true,
   },
   "globex-corp": {
     displayName: "Globex Corp",
@@ -79,6 +55,7 @@ WYcSBhaSiobQBXeIw50P5TacWi7KT+17lQgTR4xq/PCMsVtBnNDCLgfQUVLz4vi6
 QcWYmTRGPlA6S8Z07BO/23AZXDgs0aV0GMpSJGmuX6SQPNQ4tY+lIkSl7iUt/Mq4
 3KRGEBcqimiEEhJNtiompA==
 -----END PRIVATE KEY-----`,
+    isRealAccount: false,
   },
 };
 
@@ -151,6 +128,17 @@ export default async function (request: ZuploRequest, context: ZuploContext) {
     );
   }
 
+  if (account.isRealAccount && (!account.clientEmail || !account.privateKeyPem || !account.gcpProjectId)) {
+    context.log.error("vertex-enterprise-auth: real account is missing required environment variables");
+    return new Response(
+      JSON.stringify({
+        error:
+          "This enterprise account is configured to use a real GCP service account, but VERTEX_DEMO_CLIENT_EMAIL / VERTEX_DEMO_PRIVATE_KEY_PEM / VERTEX_DEMO_PROJECT_ID are not set in the project's environment variables.",
+      }),
+      { status: 500, headers: { "content-type": "application/json" } }
+    );
+  }
+
   context.log.info(
     { callerSub, enterpriseAccount: account.displayName, gcpProjectId: account.gcpProjectId },
     "vertex-enterprise-auth: resolved caller to enterprise Vertex AI account"
@@ -186,8 +174,9 @@ export default async function (request: ZuploRequest, context: ZuploContext) {
         httpStatus: tokenResp.status,
         response: tokenBody,
       },
-      note:
-        "This service account is a locally-generated demo credential and is not registered with Google, so the token exchange above is expected to be rejected by Google. The signed JWT and the live call to Google's real OAuth2 token endpoint are genuine - only the credential's validity is mocked.",
+      note: account.isRealAccount
+        ? "This is a real, registered GCP service account. The access_token above (if present) is a genuine, usable Google OAuth2 token for this enterprise's Vertex AI project."
+        : "This service account is a locally-generated demo credential and is not registered with Google, so the token exchange above is expected to be rejected by Google. The signed JWT and the live call to Google's real OAuth2 token endpoint are genuine - only the credential's validity is mocked.",
     }),
     { status: 200, headers: { "content-type": "application/json" } }
   );
