@@ -59,14 +59,6 @@ QcWYmTRGPlA6S8Z07BO/23AZXDgs0aV0GMpSJGmuX6SQPNQ4tY+lIkSl7iUt/Mq4
   },
 };
 
-// Maps a caller's identity (the same x-user-sub header used elsewhere in
-// this gateway) to which enterprise's Vertex AI account should be used to
-// service their request.
-const CALLER_TO_ENTERPRISE: Record<string, string> = {
-  "alice@acme-corp.com": "acme-corp",
-  "bob@globex-corp.com": "globex-corp",
-};
-
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const VERTEX_SCOPE = "https://www.googleapis.com/auth/cloud-platform";
 
@@ -113,16 +105,23 @@ async function signGoogleServiceAccountJwt(account: EnterpriseAccount): Promise<
 }
 
 export default async function (request: ZuploRequest, context: ZuploContext) {
-  const callerSub = request.headers.get("x-user-sub") ?? "anonymous";
-  const enterpriseKey = CALLER_TO_ENTERPRISE[callerSub];
+  // request.user is populated by the vertex-demo-api-key-inbound policy
+  // (ApiKeyInboundPolicy): .sub is the authenticated Consumer's name, .data
+  // is that Consumer's metadata - a real Zuplo-managed identity record, not
+  // a hardcoded lookup table.
+  const callerSub = request.user?.sub ?? "anonymous";
+  const enterpriseKey = request.user?.data?.enterpriseAccount as string | undefined;
   const account = enterpriseKey ? ENTERPRISE_ACCOUNTS[enterpriseKey] : undefined;
 
   if (!account) {
-    context.log.warn({ callerSub }, "vertex-enterprise-auth: no enterprise account mapped for this caller");
+    context.log.warn(
+      { callerSub, enterpriseKey },
+      "vertex-enterprise-auth: authenticated consumer has no valid enterpriseAccount metadata"
+    );
     return new Response(
       JSON.stringify({
-        error: `No enterprise Vertex AI account is configured for caller '${callerSub}'`,
-        knownCallers: Object.keys(CALLER_TO_ENTERPRISE),
+        error: `Consumer '${callerSub}' has no valid 'enterpriseAccount' metadata (got '${enterpriseKey}'). Set it in the Consumer's metadata in the Zuplo Portal.`,
+        knownEnterpriseAccounts: Object.keys(ENTERPRISE_ACCOUNTS),
       }),
       { status: 404, headers: { "content-type": "application/json" } }
     );
