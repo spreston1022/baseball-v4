@@ -1,11 +1,16 @@
 import { ZuploContext, ZuploRequest, environment } from "@zuplo/runtime";
 
-// The "acme-corp" account below is a REAL GCP service account (credentials
-// loaded from environment variables, never hardcoded - this repo is public).
-// "globex-corp" remains a locally-generated mock, deliberately not registered
-// with Google, kept as a contrast case: its token exchange is expected to be
-// rejected, proving the rejection path is genuine and not just an artifact of
-// bad code.
+// Real enterprise accounts load their credential from environment variables
+// using a generic, predictable naming scheme derived from the account's key
+// (see envVarPrefix/loadRealAccount below) - never hardcoded, since this
+// repo is public. Onboarding a new real customer is "add one line to
+// REAL_ENTERPRISE_ACCOUNT_KEYS, add a domain line below, and set three env
+// vars" - no new TypeScript required.
+//
+// "globex-corp" remains a locally-generated mock, deliberately not
+// registered with Google, kept as a fixed contrast case: its token exchange
+// is expected to be rejected, proving the rejection path is genuine and not
+// just an artifact of bad code.
 
 type EnterpriseAccount = {
   displayName: string;
@@ -15,14 +20,32 @@ type EnterpriseAccount = {
   isRealAccount: boolean;
 };
 
-const ENTERPRISE_ACCOUNTS: Record<string, EnterpriseAccount> = {
-  "acme-corp": {
-    displayName: "Acme Corp",
-    gcpProjectId: (environment.VERTEX_DEMO_PROJECT_ID ?? "").trim(),
-    clientEmail: (environment.VERTEX_DEMO_CLIENT_EMAIL ?? "").trim(),
-    privateKeyPem: (environment.VERTEX_DEMO_PRIVATE_KEY_PEM ?? "").trim().replace(/\\n/g, "\n"),
+// key -> human-readable display name. Add an entry here (and a matching
+// domain in DOMAIN_TO_ENTERPRISE below) to onboard a new real customer.
+const REAL_ENTERPRISE_ACCOUNTS: Record<string, string> = {
+  "acme-corp": "Acme Corp",
+};
+
+function envVarPrefix(enterpriseKey: string): string {
+  return "VERTEX_" + enterpriseKey.toUpperCase().replace(/[^A-Z0-9]/g, "_");
+}
+
+function loadRealAccount(enterpriseKey: string, displayName: string): EnterpriseAccount {
+  const prefix = envVarPrefix(enterpriseKey);
+  const env = environment as Record<string, string | undefined>;
+  return {
+    displayName,
+    gcpProjectId: (env[`${prefix}_PROJECT_ID`] ?? "").trim(),
+    clientEmail: (env[`${prefix}_CLIENT_EMAIL`] ?? "").trim(),
+    privateKeyPem: (env[`${prefix}_PRIVATE_KEY_PEM`] ?? "").trim().replace(/\\n/g, "\n"),
     isRealAccount: true,
-  },
+  };
+}
+
+const ENTERPRISE_ACCOUNTS: Record<string, EnterpriseAccount> = {
+  ...Object.fromEntries(
+    Object.entries(REAL_ENTERPRISE_ACCOUNTS).map(([key, displayName]) => [key, loadRealAccount(key, displayName)])
+  ),
   "globex-corp": {
     displayName: "Globex Corp",
     gcpProjectId: "globex-corp-demo-project",
@@ -146,11 +169,11 @@ export default async function (request: ZuploRequest, context: ZuploContext) {
   }
 
   if (account.isRealAccount && (!account.clientEmail || !account.privateKeyPem || !account.gcpProjectId)) {
-    context.log.error("vertex-enterprise-auth: real account is missing required environment variables");
+    const prefix = envVarPrefix(enterpriseKey as string);
+    context.log.error({ enterpriseKey, prefix }, "vertex-enterprise-auth: real account is missing required environment variables");
     return new Response(
       JSON.stringify({
-        error:
-          "This enterprise account is configured to use a real GCP service account, but VERTEX_DEMO_CLIENT_EMAIL / VERTEX_DEMO_PRIVATE_KEY_PEM / VERTEX_DEMO_PROJECT_ID are not set in the project's environment variables.",
+        error: `This enterprise account is configured to use a real GCP service account, but ${prefix}_CLIENT_EMAIL / ${prefix}_PRIVATE_KEY_PEM / ${prefix}_PROJECT_ID are not set in the project's environment variables.`,
       }),
       { status: 500, headers: { "content-type": "application/json" } }
     );
