@@ -6,6 +6,32 @@
     "description": "A unified API gateway for multiple AI providers. OpenAI-compatible ops are served under /{app_id}/v1/*; other paths under /{app_id} are rejected."
   },
   "paths": {
+    "/demo/vertex-enterprise-auth": {
+      "post": {
+        "summary": "Demo: resolve caller to an enterprise Vertex AI account and perform a real Google OAuth2 token exchange",
+        "description": "Reads the x-user-sub header, maps it to a mocked enterprise Vertex AI service account, signs a real Google service-account JWT, and exchanges it with Google's live oauth2.googleapis.com/token endpoint. The service accounts are local demo credentials (not registered with Google), so the exchange itself is expected to be rejected - the JWT signing and the live call to Google are genuine.",
+        "operationId": "vertexEnterpriseAuthDemo",
+        "responses": {
+          "200": {
+            "description": "Resolution + Google token exchange result"
+          },
+          "404": {
+            "description": "No enterprise account mapped for this caller"
+          }
+        },
+        "x-zuplo-route": {
+          "corsPolicy": "none",
+          "handler": {
+            "export": "default",
+            "module": "$import(./modules/vertex-enterprise-auth-handler)",
+            "options": {}
+          },
+          "policies": {
+            "inbound": []
+          }
+        }
+      }
+    },
     "/.well-known/openid-configuration": {
       "get": {
         "summary": "OIDC discovery document for JWT auth issuer",
