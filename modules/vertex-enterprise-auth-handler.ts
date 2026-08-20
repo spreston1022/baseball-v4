@@ -129,11 +129,21 @@ export default async function (request: ZuploRequest, context: ZuploContext) {
   }
 
   if (account.isRealAccount && (!account.clientEmail || !account.privateKeyPem || !account.gcpProjectId)) {
-    context.log.error("vertex-enterprise-auth: real account is missing required environment variables");
+    const diagnostic = {
+      VERTEX_DEMO_CLIENT_EMAIL_present: Boolean(environment.VERTEX_DEMO_CLIENT_EMAIL),
+      VERTEX_DEMO_CLIENT_EMAIL_length: (environment.VERTEX_DEMO_CLIENT_EMAIL ?? "").length,
+      VERTEX_DEMO_PROJECT_ID_present: Boolean(environment.VERTEX_DEMO_PROJECT_ID),
+      VERTEX_DEMO_PROJECT_ID_length: (environment.VERTEX_DEMO_PROJECT_ID ?? "").length,
+      VERTEX_DEMO_PRIVATE_KEY_PEM_present: Boolean(environment.VERTEX_DEMO_PRIVATE_KEY_PEM),
+      VERTEX_DEMO_PRIVATE_KEY_PEM_length: (environment.VERTEX_DEMO_PRIVATE_KEY_PEM ?? "").length,
+      VERTEX_DEMO_PRIVATE_KEY_PEM_startsWithBegin: (environment.VERTEX_DEMO_PRIVATE_KEY_PEM ?? "").startsWith("-----BEGIN"),
+    };
+    context.log.error({ diagnostic }, "vertex-enterprise-auth: real account is missing required environment variables");
     return new Response(
       JSON.stringify({
         error:
           "This enterprise account is configured to use a real GCP service account, but VERTEX_DEMO_CLIENT_EMAIL / VERTEX_DEMO_PRIVATE_KEY_PEM / VERTEX_DEMO_PROJECT_ID are not set in the project's environment variables.",
+        diagnostic,
       }),
       { status: 500, headers: { "content-type": "application/json" } }
     );
