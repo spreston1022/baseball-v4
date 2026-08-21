@@ -98,6 +98,7 @@ QcWYmTRGPlA6S8Z07BO/23AZXDgs0aV0GMpSJGmuX6SQPNQ4tY+lIkSl7iUt/Mq4
 const DOMAIN_TO_ENTERPRISE: Record<string, string> = {
   "acme-corp.com": "acme-corp",
   "globex-corp.com": "globex-corp",
+  "zuplo.com": "acme-corp",
 };
 
 function resolveEnterpriseKey(callerSub: string): string | undefined {
