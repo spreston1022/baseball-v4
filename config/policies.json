@@ -38,6 +38,15 @@
     },
     {
       "handler": {
+        "export": "default",
+        "module": "$import(./modules/token-quota-outbound)",
+        "options": {}
+      },
+      "name": "baseball-token-quota-outbound",
+      "policyType": "custom-code-inbound"
+    },
+    {
+      "handler": {
         "export": "OpenIdJwtInboundPolicy",
         "module": "$import(@zuplo/runtime)",
         "options": {
