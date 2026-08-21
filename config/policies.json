@@ -66,12 +66,22 @@
           "period": "daily",
           "quotaBy": "user",
           "allowances": {
-            "requests": 100
+            "requests": 100,
+            "tokens": 1000
           }
         }
       },
       "name": "baseball-quota-inbound",
       "policyType": "quota-inbound-policy"
+    },
+    {
+      "handler": {
+        "export": "default",
+        "module": "$import(./modules/token-quota-outbound)",
+        "options": {}
+      },
+      "name": "baseball-token-quota-outbound",
+      "policyType": "custom-code-inbound"
     },
     {
       "handler": {
