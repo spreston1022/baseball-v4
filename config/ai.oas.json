@@ -32,6 +32,29 @@
         }
       }
     },
+    "/demo/quota-usage": {
+      "get": {
+        "summary": "Look up today's request/token quota usage for a caller",
+        "description": "Reads the x-user-sub header and returns today's request and token counts against baseball-header-quota-custom-inbound's daily limits, for visualizing usage in the client UI.",
+        "operationId": "quotaUsage",
+        "responses": {
+          "200": {
+            "description": "Current usage and limits for this caller"
+          }
+        },
+        "x-zuplo-route": {
+          "corsPolicy": "none",
+          "handler": {
+            "export": "default",
+            "module": "$import(./modules/quota-usage-handler)",
+            "options": {}
+          },
+          "policies": {
+            "inbound": []
+          }
+        }
+      }
+    },
     "/.well-known/openid-configuration": {
       "get": {
         "summary": "OIDC discovery document for JWT auth issuer",

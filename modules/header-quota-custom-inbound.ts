@@ -1,19 +1,13 @@
 import { ZuploContext, ZuploRequest, ZoneCache } from "@zuplo/runtime";
-
-const IDENTITY_HEADER = "x-user-sub";
-const DAILY_REQUEST_LIMIT = 4;
-const DAILY_TOKEN_LIMIT = 1000;
-const TTL_SECONDS = 86400;
-
-interface Usage {
-  requests: number;
-  tokens: number;
-}
-
-function todayKey(): string {
-  const d = new Date();
-  return `${d.getUTCFullYear()}-${d.getUTCMonth() + 1}-${d.getUTCDate()}`;
-}
+import {
+  IDENTITY_HEADER,
+  DAILY_REQUEST_LIMIT,
+  DAILY_TOKEN_LIMIT,
+  TTL_SECONDS,
+  CACHE_NAMESPACE,
+  cacheKey,
+  Usage,
+} from "./quota-shared";
 
 function quotaExceeded(identity: string, meter: string): Response {
   return new Response(
@@ -29,8 +23,8 @@ function quotaExceeded(identity: string, meter: string): Response {
 
 export default async function (request: ZuploRequest, context: ZuploContext) {
   const identity = request.headers.get(IDENTITY_HEADER) ?? "anonymous";
-  const cache = new ZoneCache<Usage>("baseball-header-quota", context);
-  const key = `${identity}:${todayKey()}`;
+  const cache = new ZoneCache<Usage>(CACHE_NAMESPACE, context);
+  const key = cacheKey(identity);
 
   const raw = await cache.get(key);
   const current: Usage = raw && typeof raw === "object" ? raw : { requests: 0, tokens: 0 };
